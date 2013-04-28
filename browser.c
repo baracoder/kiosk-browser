@@ -14,6 +14,7 @@ void unmaximize();
 
 static WebKitWebView* web_view;
 static GtkWidget *window;
+static GtkWidget *scrolled_window;
 gchar* default_url = "https://github.com/pschultz/kiosk-browser/blob/master/README.md";
 
 #ifndef GDK_KEY_F5
@@ -34,10 +35,16 @@ int main(int argc, char** argv) {
 
   web_view = WEBKIT_WEB_VIEW(webkit_web_view_new());
 
+  // Create a scrollable area, and put the browser instance into it
+  scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
+          GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+  gtk_container_add(GTK_CONTAINER(scrolled_window), GTK_WIDGET(web_view));
+
   signal(SIGHUP, reload_browser);
   signal(SIGUSR1, toggle_fullscreen);
 
-  gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(web_view));
+  gtk_container_add(GTK_CONTAINER(window), scrolled_window);
 
   if(argc > 1) {
     webkit_web_view_load_uri(web_view, argv[1]);
@@ -45,6 +52,11 @@ int main(int argc, char** argv) {
   else {
     webkit_web_view_load_uri(web_view, default_url);
   }
+
+  // Make sure that when the browser area becomes visible, it will get
+  // mouse and keyboard events
+  gtk_widget_grab_focus(GTK_WIDGET(web_view));
+
 
   maximize();
   gtk_widget_show_all(window);
